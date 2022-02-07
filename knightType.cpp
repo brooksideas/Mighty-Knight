@@ -22,12 +22,13 @@ knightType::knightType(int dim)
         for (int j = 0; j < dim; j++)
             chessboard[i][j] = 0; // sets each element to zero
     }
+    outputTour();
     knightType::functionsCalled = 0; // sets functionsCalled to 0
 }
 
 static int IsInBoundaries(int x_pos, int y_pos)
 {
-    return (((0 <= x_pos) && (x_pos < DEFAULT_DIMENSION)) && (0 <= y_pos) && (y_pos < DEFAULT_DIMENSION));
+    return (((0 <= x_pos) && (x_pos < 8)) && (0 <= y_pos) && (y_pos < 8));
 }
 
 static int IsMoveValid(int **chessboard, int x_pos, int y_pos)
@@ -40,7 +41,7 @@ vector<knightType::position> knightType::getAvailableMoves(int r, int c)
 
     std::vector<position> knightMoves;
 
-    knightMoves.push_back((0, 0, 0));
+    // knightMoves.push_back(knightType::position(0, 0, 0));
 
     // calculate the possible onward moves
     int maxMoves = 8;
@@ -59,27 +60,40 @@ vector<knightType::position> knightType::getAvailableMoves(int r, int c)
     int onwardMoveCounter = 0, i = 0;
 
     // stores the tour index after each knight move
-    vector<int> column;
+    vector<knightType::position> currentMove;
 
     // Iterate through the possible moves for the Knight  ++onwardMoveCounter;
     for (i = 0; i < maxMoves; ++i)
     {
         if (IsMoveValid(knightType::chessboard, r + possibleMoves[i][0], c + possibleMoves[i][1]))
         {
+            // New spots
+            int newRow = r + possibleMoves[i][0];
+            int newCol = c + possibleMoves[i][1];
+
             // the Knight can move to this direction . Thus get all the possible moves from this location
             for (int j = 0; j < maxMoves; ++j)
             {
-                if (IsMoveValid(knightType::chessboard, r + possibleMoves[j][0], c + possibleMoves[j][1]))
+
+                if (IsMoveValid(knightType::chessboard, newRow + possibleMoves[j][0], newCol + possibleMoves[j][1]))
                 {
+                    cout << "IsMoveValid" << IsMoveValid(knightType::chessboard, newRow + possibleMoves[j][0], newCol + possibleMoves[j][1]) << endl;
                     ++onwardMoveCounter; // if this possible move is valid then increase the onward move by 1
                 }
             }
 
             // Set the Knight onward moves from this specific location
-            knightMoves[i].row = r + possibleMoves[i][0];
-            knightMoves[i].col = c + possibleMoves[i][1];
-            knightMoves[i].onwardMoves = onwardMoveCounter;
+
+            knightMoves.push_back(knightType::position(r + possibleMoves[i][0], c + possibleMoves[i][1], onwardMoveCounter));
+            // reset the onwardMove Counter
+            onwardMoveCounter = 0;
         }
+
+        cout << "r =>" << i << "===>" << knightMoves[i].row << "\t";
+        cout << "c "
+             << "===>" << knightMoves[i].col << "\t";
+        cout << "o "
+             << "===>" << knightMoves[i].onwardMoves << endl;
     }
 
     //  return all the available knight moves
@@ -153,7 +167,11 @@ vector<knightType::position> pickMinOnwardMove(vector<knightType::position> knig
 // function that makes the first initial call to the recursive function
 bool knightType::knightTour(int r, int c)
 {
-    return knightTour(r, c, 1);
+    cout << "ROW Ent" << r << endl;
+
+    cout << "Col Ent" << c << endl;
+
+    return knightType::knightTour(r, c, 1);
 }
 
 // initially moving through the path with out backtracking thus zero
@@ -166,22 +184,32 @@ bool knightType::knightTour(int r, int c, int tourIndex)
     // Set the board[r][c] with tourIndex
     setCell(r, c, tourIndex);
 
-    // Check if the board is full
-    fullBoard();
+    // // Check if the board is full
 
-    // Get all the available moves from location [r,c]
+    // // Get all the available moves from location [r,c]
     std::vector<knightType::position> knightMoves = getAvailableMoves(r, c);
+
+    for (auto x : knightMoves)
+        cout << "[" << x.row << ", " << x.col << "," << x.onwardMoves << "] ";
 
     // Pick the available move with the minimal onward moves
     std::vector<knightType::position> knightMoveSelected = pickMinOnwardMove(knightMoves, backtrackCounter);
+
+    cout << "Minimum"
+         << "[" << knightMoveSelected[0].row << ", " << knightMoveSelected[0].col << "," << knightMoveSelected[0].onwardMoves << "] ";
 
     // Pick the knight move with the smallest onward move . Initially knightMoves[0 + 0] => knightMoves[0]
 
     // Make a recursive call to this function until the board is full
     while (fullBoard() == false)
     {
-        if (knightTour(knightMoveSelected[0].row, knightMoveSelected[0].col, tourIndex))
+        if(tourIndex == 64){
+            break;
+        }
+        if (this->knightTour(knightMoveSelected[0].row, knightMoveSelected[0].col, tourIndex) == true)
         {
+            cout << "Tour Ent" << tourIndex << endl;
+
             tourIndex++;
             backtrackCounter = 0; // set it back to zero
             return true;
@@ -194,13 +222,51 @@ bool knightType::knightTour(int r, int c, int tourIndex)
         }
     }
 
+    // When the board is full print all the outputs
+    if (fullBoard() != 0)
+    {
+        outputTour();
+    }
     return false;
 }
 
-// Driver Code
-int main()
+// Output the Knight Tour entire chessboard
+void knightType::outputTour() const
 {
-    // Function Call
+
+    // loop through the chessboard and display all
+    for (int i = 0; i < knightType::dimension; i++)
+    {
+        for (int j = 0; j < knightType::dimension; j++)
+            cout << knightType::chessboard[i][j] << " ";
+    }
+
+    cout << "\n"
+         << endl; // row end
+}
+// Driver Code
+int main(int agrc, const char *agrv[])
+{
+
+    int dimension, row, col;
+    cout << "Enter board dimension:";
+    cin >> dimension;
+
+    // Enter the dimension and generate the chessboard
+    knightType((int)dimension);
+
+    cout << "\n Enter initial knight position :";
+    cin >> row >> col;
+
+    cout << "Row =>" << row << endl;
+
+    cout << "col =>" << col << endl;
+
+    // knightTour recursive Function Call
+
+    knightType knight;
+
+    knight.knightTour(row, col);
 
     return 0;
 }
