@@ -33,7 +33,18 @@ static int IsInBoundaries(int x_pos, int y_pos)
 
 static int IsMoveValid(int **chessboard, int x_pos, int y_pos)
 {
-    return ((IsInBoundaries(x_pos, y_pos)) && (chessboard[x_pos][y_pos] == 0));
+    cout<<"In for check"<<x_pos<<y_pos<<endl;
+    cout<<"In for IsInBoundaries(x_pos, y_pos)"<<IsInBoundaries(x_pos, y_pos)<<endl;
+    if(IsInBoundaries(x_pos, y_pos) == 1) {
+       if( chessboard[x_pos][y_pos] == 0){
+           return 1;
+       }else{
+           return 0;
+       }
+    }else{
+         cout<<"In for IsInBoundaries(x_pos, y_pos) ELsE"<<IsInBoundaries(x_pos, y_pos)<<endl;
+        return 0;
+    }
 }
 
 vector<knightType::position> knightType::getAvailableMoves(int r, int c)
@@ -65,7 +76,7 @@ vector<knightType::position> knightType::getAvailableMoves(int r, int c)
     // Iterate through the possible moves for the Knight  ++onwardMoveCounter;
     for (i = 0; i < maxMoves; ++i)
     {
-        if (IsMoveValid(knightType::chessboard, r + possibleMoves[i][0], c + possibleMoves[i][1]))
+        if (IsMoveValid(knightType::chessboard, r + possibleMoves[i][0], c + possibleMoves[i][1]) == 1)
         {
             // New spots
             int newRow = r + possibleMoves[i][0];
@@ -75,7 +86,7 @@ vector<knightType::position> knightType::getAvailableMoves(int r, int c)
             for (int j = 0; j < maxMoves; ++j)
             {
 
-                if (IsMoveValid(knightType::chessboard, newRow + possibleMoves[j][0], newCol + possibleMoves[j][1]))
+                if (IsMoveValid(knightType::chessboard, newRow + possibleMoves[j][0], newCol + possibleMoves[j][1]) == 1)
                 {
                     cout << "IsMoveValid" << IsMoveValid(knightType::chessboard, newRow + possibleMoves[j][0], newCol + possibleMoves[j][1]) << endl;
                     ++onwardMoveCounter; // if this possible move is valid then increase the onward move by 1
@@ -87,6 +98,8 @@ vector<knightType::position> knightType::getAvailableMoves(int r, int c)
             knightMoves.push_back(knightType::position(r + possibleMoves[i][0], c + possibleMoves[i][1], onwardMoveCounter));
             // reset the onwardMove Counter
             onwardMoveCounter = 0;
+        }else{
+            continue;
         }
 
         cout << "r =>" << i << "===>" << knightMoves[i].row << "\t";
@@ -175,20 +188,31 @@ bool knightType::knightTour(int r, int c)
 }
 
 // initially moving through the path with out backtracking thus zero
-int backtrackCounter = 0;
+int backtrackCounter = 0 , fnc = 0; 
 
 // recursive function simulates the knight movement
 bool knightType::knightTour(int r, int c, int tourIndex)
 {
-
+    cout << "CALLS" << fnc <<endl;
+    fnc++;
+    
+     cout << "TOUR#" << tourIndex <<endl;
     // Set the board[r][c] with tourIndex
-    setCell(r, c, tourIndex);
-
+   // setCell(r, c, tourIndex);
+    
+    // edge 
+     if (tourIndex == 1){
+              cout << "Tour Ent s" << tourIndex << endl;
+               setCell(r, c, tourIndex);
+              tourIndex++;
+            knightTour(r, c, (int)tourIndex);
+            return true;
+        }
     // // Check if the board is full
 
     // // Get all the available moves from location [r,c]
     std::vector<knightType::position> knightMoves = getAvailableMoves(r, c);
-
+      cout << "knightMoves CALLed"<<endl;
     for (auto x : knightMoves)
         cout << "[" << x.row << ", " << x.col << "," << x.onwardMoves << "] ";
 
@@ -197,37 +221,37 @@ bool knightType::knightTour(int r, int c, int tourIndex)
 
     cout << "Minimum"
          << "[" << knightMoveSelected[0].row << ", " << knightMoveSelected[0].col << "," << knightMoveSelected[0].onwardMoves << "] ";
-
-    // Pick the knight move with the smallest onward move . Initially knightMoves[0 + 0] => knightMoves[0]
-
-    // Make a recursive call to this function until the board is full
-    while (fullBoard() == false)
-    {
-        if(tourIndex == 64){
-            break;
-        }
-        if (this->knightTour(knightMoveSelected[0].row, knightMoveSelected[0].col, tourIndex) == true)
-        {
-            cout << "Tour Ent" << tourIndex << endl;
-
-            tourIndex++;
-            backtrackCounter = 0; // set it back to zero
-            return true;
-        }
-        else
-        {
-            // If the function returns false then simply return to picking another minimal onward moves of previous
+      cout <<knightMoveSelected[0].row << endl;
+      cout <<knightMoveSelected[0].col << endl; 
+      cout <<knightMoveSelected[0].onwardMoves << endl;
+        cout << tourIndex << endl; 
+        
+      
+       
+        
+        if(tourIndex < 64){
+            cout << "Tour Ent apass" << knightMoveSelected[0].row << knightMoveSelected[0].col << tourIndex << endl;
+            
+            // If there is no location the knight can move to
+            if(knightMoveSelected.size() != 0){
+                 setCell(knightMoveSelected[0].row, knightMoveSelected[0].col , tourIndex);
+                  tourIndex++;
+                  backtrackCounter = 0;
+          knightTour(knightMoveSelected[0].row, knightMoveSelected[0].col, (int)tourIndex);
+                          
+              return true;
+            }else{
+                // If the function returns false then simply return to picking another minimal onward moves of previous
             backtrackCounter++;
-            setCell(r, c, 0);
+        
+            cout << "Tour BACK***" << tourIndex << endl;
+             knightTour(r, c, tourIndex);
+            }
+            
         }
-    }
-
-    // When the board is full print all the outputs
-    if (fullBoard() != 0)
-    {
-        outputTour();
-    }
-    return false;
+        
+ 
+     return false; 
 }
 
 // Output the Knight Tour entire chessboard
@@ -237,12 +261,14 @@ void knightType::outputTour() const
     // loop through the chessboard and display all
     for (int i = 0; i < knightType::dimension; i++)
     {
-        for (int j = 0; j < knightType::dimension; j++)
+        for (int j = 0; j < knightType::dimension; j++){
             cout << knightType::chessboard[i][j] << " ";
+        }
+          cout << "\n"
+         << endl; // row end
     }
 
-    cout << "\n"
-         << endl; // row end
+  
 }
 // Driver Code
 int main(int agrc, const char *agrv[])
@@ -267,6 +293,8 @@ int main(int agrc, const char *agrv[])
     knightType knight;
 
     knight.knightTour(row, col);
+    
+    knight.outputTour();
 
     return 0;
 }
